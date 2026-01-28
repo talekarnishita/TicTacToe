@@ -1,0 +1,52 @@
+// Elements
+const boardEl = document.getElementById("board");
+const statusEl = document.getElementById("status");
+const resetBtn = document.getElementById("reset");
+
+// Render board from server state
+function renderBoard(board, gameOver) {
+  boardEl.innerHTML = "";
+  board.forEach((value, index) => {
+    const cell = document.createElement("div");
+    cell.className = "cell" + (gameOver ? " disabled" : "");
+    cell.dataset.index = index;
+    cell.textContent = value ? value : "";
+    cell.addEventListener("click", onCellClick);
+    boardEl.appendChild(cell);
+  });
+}
+
+// Fetch current state from server
+async function fetchState() {
+  const res = await fetch("/state");
+  const data = await res.json();
+  renderBoard(data.board, data.game_over);
+  statusEl.textContent = data.message;
+}
+
+// Handle a cell click -> send move to server
+async function onCellClick(e) {
+  const index = parseInt(e.target.dataset.index, 10);
+  const res = await fetch("/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ index }),
+  });
+  const data = await res.json();
+  renderBoard(data.board, data.game_over);
+  statusEl.textContent = data.message;
+}
+
+// Reset game via server
+async function resetGame() {
+  const res = await fetch("/reset", { method: "POST" });
+  const data = await res.json();
+  renderBoard(data.board, data.game_over);
+  statusEl.textContent = data.message;
+}
+
+resetBtn.addEventListener("click", resetGame);
+
+// Initial load
+fetchState();
+
